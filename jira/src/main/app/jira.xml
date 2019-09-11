@@ -41,7 +41,7 @@ payload]]></dw:set-payload>
     <flow name="jiraFlow-PUT">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/update" allowedMethods="PUT" doc:name="HTTP"/>
         <scripting:transformer mimeType="application/json" doc:name="Groovy">
-            <scripting:script engine="Groovy"><![CDATA[def aMultilineString = '''{
+            <scripting:script engine="Groovy"><![CDATA[def mouli = '''{
       "fields": { 
       "project":
       {
@@ -55,6 +55,7 @@ payload]]></dw:set-payload>
          }
 }''']]></scripting:script>
         </scripting:transformer>
+
         <dw:transform-message doc:name="Transform Message">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
