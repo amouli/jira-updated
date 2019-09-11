@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:context="http://www.springframework.org/schema/context" xmlns:facebook="http://www.mulesoft.org/schema/mule/facebook" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:stash="http://www.mulesoft.org/schema/mule/stash" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:jirarest="http://www.mulesoft.org/schema/mule/jirarest" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jirarest http://www.mulesoft.org/schema/mule/jirarest/current/mule-jirarest.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/stash http://www.mulesoft.org/schema/mule/stash/current/mule-stash.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/facebook http://www.mulesoft.org/schema/mule/facebook/current/mule-facebook.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd">
+    <jirarest:basic-config name="Jira_Rest__Basic_Authentication" username="${jira.username}" password="${jira.password}" serverUrl="${jira.server}" doc:name="Jira Rest: Basic Authentication" />
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <stash:config-type name="Stash__Configuration" username="ammati.mouli@kelltontech.com" password="Mouli143@" serverUrl="http://localhost:8080" doc:name="Stash: Configuration"/>
+    <smtp:connector name="SMTP" contentType="application/json" fromAddress="mouliambati1994@gmail.com" subject="jira testing" validateConnections="true" doc:name="SMTP"/>
+    <smtp:connector name="SMTP1" contentType="application/json" fromAddress="ammati.mouli@kelltontech.com" subject="jira" validateConnections="true" doc:name="SMTP"/>
+    <smtp:gmail-connector name="Gmail" contentType="application/java" fromAddress="ammati.mouli@kelltontech.com" subject="check your mail" validateConnections="true" doc:name="Gmail"/>
+    <context:property-placeholder location="${env}.properties"/>
+    <flow name="jiraFlow-GET">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/pro" allowedMethods="GET" doc:name="HTTP"/>
+        <jirarest:projects-get config-ref="Jira_Rest__Basic_Authentication" projectIdOrKey="MOUL-3" doc:name="Jira Rest"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="============#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="jira-DELETE">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/del" allowedMethods="DELETE" doc:name="HTTP"/>
+        <jirarest:issues-delete config-ref="Jira_Rest__Basic_Authentication" issueKeyOrId="MOUL-2" doc:name="Jira Rest"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="jiraFlow-PUT">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/update" allowedMethods="PUT" doc:name="HTTP"/>
+        <scripting:transformer mimeType="application/json" doc:name="Groovy">
+            <scripting:script engine="Groovy"><![CDATA[def aMultilineString = '''{
+      "fields": { 
+      "project":
+      {
+         "key":  "MOUL"
+       },
+       "summary": "CHANGED THE SUMMARY FROM GENERATING ISSUE.",
+       "description": "Creating of an issue using project keys and issue type names using the Rest API",
+       "issuetype": {
+         "name": "Task"
+         }
+         }
+}''']]></scripting:script>
+        </scripting:transformer>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <jirarest:issues-update config-ref="Jira_Rest__Basic_Authentication" issueKeyOrId="MOUL-2" doc:name="Jira Rest"/>
+
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="jiraFlow-POST">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP" allowedMethods="POST"/>
+        <scripting:transformer mimeType="application/json" doc:name="Groovy">
+            <scripting:script engine="Groovy"><![CDATA[def mouli = '''{
+      "fields": { 
+      "project":
+      {
+         "key":  "MOUL"
+       },
+       "summary": "GENEARTING ISSUES",
+       "description": "Creating of an issue using project keys and issue type names using the Rest API",
+       "issuetype": {
+         "name": "Task"
+         }
+         }
+}''']]></scripting:script>
+        </scripting:transformer>
+
+
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <jirarest:issues-create config-ref="Jira_Rest__Basic_Authentication" doc:name="Jira Rest"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+
+    </flow>
+</mule>
